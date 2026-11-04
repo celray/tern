@@ -1,0 +1,14 @@
+mk_add_options MOZ_OBJDIR=/work/obj-tern
+mk_add_options MOZ_MAKE_FLAGS="-j16"
+ac_add_options --enable-application=browser
+ac_add_options --with-app-basename=AuraTern
+ac_add_options --with-branding=browser/branding/auratern
+ac_add_options --enable-update-channel=esr
+ac_add_options --disable-updater
+ac_add_options --disable-eme
+ac_add_options --disable-tests
+ac_add_options --disable-debug
+ac_add_options --enable-optimize=-O2
+ac_add_options --disable-lto
+ac_add_options --enable-linker=lld
+ac_add_options --prefix=/usr

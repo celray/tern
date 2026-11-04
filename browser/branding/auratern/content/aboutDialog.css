@@ -1,0 +1,12 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#aboutDialogContainer { background-color: #f3f6fa; color: #1c2634; }
+#rightBox { background-size: auto 44px; margin-inline: 30px; padding-top: 64px; }
+#bottomBox { padding: 15px 10px; background-color: #e0e8f2; }
+@media (prefers-color-scheme: dark) {
+  #aboutDialogContainer { background-color: #162235; color: #eef4fc; color-scheme: dark; }
+  #rightBox { background-image: url("chrome://branding/content/about-wordmark-dark.svg"); }
+  #bottomBox { background-color: #111c2d; }
+}

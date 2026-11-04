@@ -1,0 +1,455 @@
+--- a/browser/base/content/browser-customtitlebar.js
++++ b/browser/base/content/browser-customtitlebar.js
+@@ -6,0 +7,6 @@
++    if (Services.appinfo.name === "AuraTern") {
++      let desktops = Services.env.get("XDG_CURRENT_DESKTOP").split(":");
++      Services.prefs.getDefaultBranch("").setIntPref(
++        this._prefName, desktops.some(name => name.includes("Aura")) ? 0 : 1
++      );
++    }
+--- a/browser/base/content/browser-main.js
++++ b/browser/base/content/browser-main.js
+@@ -19,0 +20 @@
++  Services.scriptloader.loadSubScript("chrome://browser/content/browser-tern-autohide.js", this);
+--- /dev/null
++++ b/browser/base/content/browser-tern-autohide.js
+@@ -0,0 +1,181 @@
++/* This Source Code Form is subject to the terms of the Mozilla Public
++ * License, v. 2.0. If a copy of the MPL was not distributed with this
++ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
++
++var TernAutohide = {
++  init() {
++    this.root = document.documentElement;
++    this.toolbox = document.getElementById("navigator-toolbox");
++    this.tabs = document.getElementById("TabsToolbar");
++    this.navbar = document.getElementById("nav-bar");
++    this.popups = new Set();
++    this.listeners = [];
++    this.edge = document.createXULElement("box");
++    this.edge.id = "tern-toolbar-edge";
++    document.body.appendChild(this.edge);
++    this.listen(this.edge, "pointerenter", () => {
++      this.hovered = true;
++      this.show();
++    });
++    this.listen(this.edge, "pointerleave", () => {
++      this.hovered = false;
++      this.scheduleHide();
++    });
++    this.listen(this.toolbox, "pointerenter", event => {
++      this.hovered = true;
++      if (this.root.hasAttribute("tern-toolbars-shown") || event.clientY <= 4) {
++        this.show();
++      }
++    });
++    this.listen(this.toolbox, "pointerleave", () => {
++      this.hovered = false;
++      this.scheduleHide();
++    });
++    this.listen(window, "keydown", event => this.keydown(event), true);
++    this.listen(window, "focusin", () => {
++      if (this.toolbox.contains(document.activeElement)) {
++        this.show();
++      }
++    });
++    this.listen(window, "focusout", () => this.scheduleHide());
++    this.listen(window, "popupshowing", event => {
++      let popup = event.target;
++      let anchor = popup.anchorNode || popup.triggerNode;
++      if (
++        this.toolbox.contains(popup) || this.toolbox.contains(anchor) ||
++        this.popups.has(popup.parentElement?.closest("menupopup")) ||
++        popup.id === "toolbar-context-menu"
++      ) {
++        this.popups.add(popup);
++        this.show();
++      }
++    });
++    this.listen(window, "popuphidden", event => {
++      this.popups.delete(event.target);
++      this.scheduleHide();
++    });
++    this.listen(this.tabs, "dragstart", () => {
++      this.dragging = true;
++      this.show();
++    }, true);
++    for (let name of ["dragend", "drop"]) {
++      this.listen(window, name, () => {
++        this.dragging = false;
++        this.scheduleHide();
++      }, true);
++    }
++    for (let name of ["fullscreen", "customizationstarting", "aftercustomization"]) {
++      this.listen(window, name, () => requestAnimationFrame(() => this.update()));
++    }
++    this.listen(window, "DOMMenuBarInactive", () => this.scheduleHide());
++    Services.prefs.addObserver("tern.autohide.", this);
++    Services.prefs.addObserver("sidebar.verticalTabs", this);
++    this.resizeObserver = new ResizeObserver(() => this.measure());
++    this.resizeObserver.observe(this.toolbox);
++    this.update();
++    this.show(1500);
++    window.addEventListener("unload", () => this.destroy(), { once: true });
++  },
++
++  listen(target, name, listener, capture = false) {
++    target.addEventListener(name, listener, capture);
++    this.listeners.push([target, name, listener, capture]);
++  },
++
++  observe() {
++    this.update();
++  },
++
++  update() {
++    let tabs = Services.prefs.getBoolPref("tern.autohide.tabs", true);
++    let navbar = Services.prefs.getBoolPref("tern.autohide.navbar", true);
++    this.enabled = (tabs || navbar) && !window.fullScreen &&
++      !this.root.hasAttribute("customizing") &&
++      !Services.prefs.getBoolPref("sidebar.verticalTabs", false) &&
++      window.toolbar.visible;
++    this.root.toggleAttribute("tern-autohide", this.enabled);
++    this.root.toggleAttribute("tern-hide-tabs", tabs);
++    this.root.toggleAttribute("tern-hide-navbar", navbar);
++    this.hovered = false;
++    requestAnimationFrame(() => this.measure());
++    this.scheduleHide();
++  },
++
++  measure() {
++    if (!this.enabled) {
++      return;
++    }
++    let hidden = parseFloat(getComputedStyle(this.toolbox).borderBottomWidth) || 0;
++    if (this.root.hasAttribute("tern-hide-tabs")) {
++      hidden += this.tabs.getBoundingClientRect().height;
++    }
++    if (this.root.hasAttribute("tern-hide-navbar")) {
++      hidden += this.navbar.getBoundingClientRect().height;
++    }
++    let fixed = Math.max(0, this.toolbox.getBoundingClientRect().height - hidden);
++    this.root.style.setProperty("--tern-hidden-height", `${hidden}px`);
++    this.root.style.setProperty("--tern-fixed-height", `${fixed}px`);
++  },
++
++  show(delay = 500) {
++    clearTimeout(this.timer);
++    this.root.setAttribute("tern-toolbars-shown", "");
++    this.scheduleHide(delay);
++  },
++
++  scheduleHide(delay = 500) {
++    clearTimeout(this.timer);
++    this.timer = setTimeout(() => {
++      if (
++        this.hovered || this.dragging || this.popups.size ||
++        this.toolbox.contains(document.activeElement) ||
++        (document.getElementById("toolbar-menubar").getAttribute("autohide") === "true" &&
++          !document.getElementById("toolbar-menubar").hasAttribute("inactive"))
++      ) {
++        return;
++      }
++      this.root.removeAttribute("tern-toolbars-shown");
++    }, delay);
++  },
++
++  keydown(event) {
++    let key = event.key.toLowerCase();
++    let accel = event.ctrlKey || event.metaKey;
++    if (
++      (accel && ["l", "t", "k"].includes(key)) ||
++      key === "f6" || key === "alt"
++    ) {
++      this.show(1000);
++    } else if (event.ctrlKey && ["tab", "pageup", "pagedown"].includes(key)) {
++      this.show(1000);
++    } else if (key === "escape") {
++      this.scheduleHide();
++    }
++  },
++
++  destroy() {
++    clearTimeout(this.timer);
++    this.resizeObserver.disconnect();
++    Services.prefs.removeObserver("tern.autohide.", this);
++    Services.prefs.removeObserver("sidebar.verticalTabs", this);
++    for (let [target, name, listener, capture] of this.listeners) {
++      target.removeEventListener(name, listener, capture);
++    }
++    this.popups.clear();
++  },
++};
++
++if (Services.appinfo.name === "AuraTern") {
++  let onStartup = subject => {
++    if (subject === window) {
++      Services.obs.removeObserver(onStartup, "browser-delayed-startup-finished");
++      TernAutohide.init();
++    }
++  };
++  Services.obs.addObserver(onStartup, "browser-delayed-startup-finished");
++  window.addEventListener("unload", () => {
++    if (!TernAutohide.root) {
++      Services.obs.removeObserver(onStartup, "browser-delayed-startup-finished");
++    }
++  }, { once: true });
++}
+--- a/browser/base/content/browser.xhtml
++++ b/browser/base/content/browser.xhtml
+@@ -41,0 +42 @@
++  <link rel="stylesheet" href="chrome://browser/content/tern-autohide.css" />
+--- /dev/null
++++ b/browser/base/content/tern-autohide.css
+@@ -0,0 +1,72 @@
++/* This Source Code Form is subject to the terms of the Mozilla Public
++ * License, v. 2.0. If a copy of the MPL was not distributed with this
++ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
++
++#tern-toolbar-edge {
++  display: none;
++}
++
++:root[tern-autohide] {
++  --tern-hidden-height: 0px;
++  --tern-fixed-height: 0px;
++
++  > body {
++    box-sizing: border-box;
++    padding-top: var(--tern-fixed-height);
++  }
++
++  #navigator-toolbox {
++    position: absolute;
++    inset: 0 0 auto;
++    z-index: 100;
++    background-color: var(--lwt-accent-color, Canvas);
++    background-image: var(--lwt-header-image, none);
++    background-position: top right;
++    background-repeat: no-repeat;
++    color: var(--lwt-text-color, CanvasText);
++    transform: translateY(calc(-1 * var(--tern-hidden-height)));
++    transition: transform 140ms ease-out;
++  }
++
++  &[tern-hide-tabs] #TabsToolbar {
++    order: -3;
++  }
++
++  &[tern-hide-navbar] #nav-bar {
++    order: -2;
++  }
++
++  &[tern-toolbars-shown] #navigator-toolbox {
++    transform: translateY(0);
++  }
++
++  #tern-toolbar-edge {
++    display: flex;
++    position: absolute;
++    inset: 0 0 auto;
++    height: 4px;
++    z-index: 101;
++    -moz-window-dragging: no-drag;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  :root[tern-autohide] #navigator-toolbox {
++    transition: none;
++  }
++}
++
++:root[tern-autohide] #urlbar {
++  transform: translateY(calc(-1 * var(--tern-hidden-height)));
++  transition: transform 140ms ease-out;
++}
++
++:root[tern-autohide][tern-toolbars-shown] #urlbar {
++  transform: translateY(0);
++}
++
++@media (prefers-reduced-motion: reduce) {
++  :root[tern-autohide] #urlbar {
++    transition: none;
++  }
++}
+--- a/browser/base/jar.mn
++++ b/browser/base/jar.mn
+@@ -49,0 +50,2 @@
++        content/browser/browser-tern-autohide.js             (content/browser-tern-autohide.js)
++        content/browser/tern-autohide.css                    (content/tern-autohide.css)
+--- a/browser/components/BrowserGlue.sys.mjs
++++ b/browser/components/BrowserGlue.sys.mjs
+@@ -17,0 +18 @@
++  BuiltInThemes: "resource:///modules/BuiltInThemes.sys.mjs",
+@@ -922,0 +924,14 @@
++  async _ensureTernInitialTheme() {
++    const marker = "auratern.theme.initialised";
++    if (Services.appinfo.name !== "AuraTern" || Services.prefs.getBoolPref(marker, false)) {
++      return;
++    }
++    await lazy.BuiltInThemes.ensureBuiltInThemes();
++    const current = Services.prefs.getStringPref("extensions.activeThemeID", "default-theme@mozilla.org");
++    if (current === "default-theme@mozilla.org" || current === "auratern-theme-auto@auralinux.org") {
++      const theme = await lazy.AddonManager.getAddonByID("auratern-theme-auto@auralinux.org");
++      if (theme) await theme.enable();
++    }
++    Services.prefs.setBoolPref(marker, true);
++  },
++
+@@ -927,0 +943 @@
++    this._ensureTernInitialTheme().catch(console.error);
+--- a/browser/components/preferences/config/tabs-browsing.mjs
++++ b/browser/components/preferences/config/tabs-browsing.mjs
+@@ -21,0 +22,2 @@
++  { id: "tern.autohide.tabs", type: "bool" },
++  { id: "tern.autohide.navbar", type: "bool" },
+@@ -131,0 +134,12 @@
++
++for (let [id, pref] of [
++  ["ternHideTabs", "tern.autohide.tabs"],
++  ["ternHideNavbar", "tern.autohide.navbar"],
++]) {
++  Preferences.addSetting({
++    id,
++    pref,
++    visible: () => Services.appinfo.name === "AuraTern",
++  });
++}
++
+@@ -612,0 +627,2 @@
++      { id: "ternHideTabs", l10nId: "tern-hide-tabs" },
++      { id: "ternHideNavbar", l10nId: "tern-hide-navbar" },
+--- a/browser/locales/en-US/browser/aboutDialog.ftl
++++ b/browser/locales/en-US/browser/aboutDialog.ftl
+@@ -79 +79 @@
+-community-exp = <label data-l10n-name="community-exp-mozillaLink">{ -vendor-short-name }</label> is a <label data-l10n-name="community-exp-creditsLink">global community</label> working together to keep the Web open, public and accessible to all.
++community-exp = Tern is built from <label data-l10n-name="community-exp-mozillaLink">Mozilla</label> Firefox ESR.
+@@ -81 +81 @@
+-community-2 = { -brand-short-name } is designed by <label data-l10n-name="community-mozillaLink">{ -vendor-short-name }</label>, a <label data-l10n-name="community-creditsLink">global community</label> working together to keep the Web open, public and accessible to all.
++community-2 = Tern is Aura’s browser, built from <label data-l10n-name="community-mozillaLink">Mozilla</label> Firefox ESR.
+@@ -83 +83 @@
+-helpus = Want to help? <label data-l10n-name="helpus-donateLink">Make a donation</label> or <label data-l10n-name="helpus-getInvolvedLink">get involved!</label>
++helpus = AuraLinux supplies browser updates through its packages. Upstream links describe Firefox.
+--- a/browser/locales/en-US/browser/preferences/preferences.ftl
++++ b/browser/locales/en-US/browser/preferences/preferences.ftl
+@@ -2688,0 +2689,5 @@
++
++tern-hide-tabs =
++    .label = Hide the tab strip until the pointer is at the top
++tern-hide-navbar =
++    .label = Hide the address bar until the pointer is at the top
+--- a/browser/moz.configure
++++ b/browser/moz.configure
+@@ -14 +14,3 @@
+-imply_option("MOZ_APP_VENDOR", "Mozilla")
++imply_option("MOZ_APP_VENDOR", "Aura")
++imply_option("MOZ_APP_PROFILE", "auratern")
++imply_option("MOZ_APP_UA_NAME", "Firefox")
+--- a/browser/themes/BuiltInThemeConfig.sys.mjs
++++ b/browser/themes/BuiltInThemeConfig.sys.mjs
+@@ -23,0 +24,4 @@
++  ["auratern-theme-auto@auralinux.org", {version: "1.0.0", path: "resource://builtin-themes/tern-auto/"}],
++  ["auratern-theme-light@auralinux.org", {version: "1.0.0", path: "resource://builtin-themes/tern-light/"}],
++  ["auratern-theme-dark@auralinux.org", {version: "1.0.0", path: "resource://builtin-themes/tern-dark/"}],
++
+--- a/browser/themes/addons/jar.mn
++++ b/browser/themes/addons/jar.mn
+@@ -22,0 +23,17 @@
++
++  content/builtin-themes/tern-auto/images/frame-dark.svg (../../branding/auratern/themes/tern-auto/images/frame-dark.svg)
++  content/builtin-themes/tern-auto/images/frame-light.svg (../../branding/auratern/themes/tern-auto/images/frame-light.svg)
++  content/builtin-themes/tern-auto/images/icon-256.png (../../branding/auratern/themes/tern-auto/images/icon-256.png)
++  content/builtin-themes/tern-auto/images/icon-32.png (../../branding/auratern/themes/tern-auto/images/icon-32.png)
++  content/builtin-themes/tern-auto/manifest.json (../../branding/auratern/themes/tern-auto/manifest.json)
++  content/builtin-themes/tern-auto/preview.svg (../../branding/auratern/themes/tern-auto/preview.svg)
++  content/builtin-themes/tern-light/images/frame-light.svg (../../branding/auratern/themes/tern-light/images/frame-light.svg)
++  content/builtin-themes/tern-light/images/icon-256.png (../../branding/auratern/themes/tern-light/images/icon-256.png)
++  content/builtin-themes/tern-light/images/icon-32.png (../../branding/auratern/themes/tern-light/images/icon-32.png)
++  content/builtin-themes/tern-light/manifest.json (../../branding/auratern/themes/tern-light/manifest.json)
++  content/builtin-themes/tern-light/preview.svg (../../branding/auratern/themes/tern-light/preview.svg)
++  content/builtin-themes/tern-dark/images/frame-dark.svg (../../branding/auratern/themes/tern-dark/images/frame-dark.svg)
++  content/builtin-themes/tern-dark/images/icon-256.png (../../branding/auratern/themes/tern-dark/images/icon-256.png)
++  content/builtin-themes/tern-dark/images/icon-32.png (../../branding/auratern/themes/tern-dark/images/icon-32.png)
++  content/builtin-themes/tern-dark/manifest.json (../../branding/auratern/themes/tern-dark/manifest.json)
++  content/builtin-themes/tern-dark/preview.svg (../../branding/auratern/themes/tern-dark/preview.svg)
+--- a/toolkit/components/search/SearchEngineSelector.sys.mjs
++++ b/toolkit/components/search/SearchEngineSelector.sys.mjs
+@@ -33,0 +34,35 @@
++// Tern does not carry search-provider attribution from the upstream configuration.
++export function ternSearchConfiguration(records) {
++  if (Services.appinfo.name !== "AuraTern") {
++    return records;
++  }
++  const attribution = new Set([
++    "client", "channel", "sourceid", "rls", "pc", "form", "t", "tag",
++    "partner", "partnerid", "campid", "toolid", "mkevt", "mkcid", "mkrid",
++    "customid", "trackingid", "ref", "from",
++  ]);
++  const result = structuredClone(records);
++  function clean(node) {
++    if (!node || typeof node !== "object") return;
++    if (Array.isArray(node)) {
++      node.forEach(clean);
++      return;
++    }
++    for (const key of Object.keys(node)) {
++      if (key === "partnerCode") {
++        node[key] = "";
++      } else if (key === "params" && Array.isArray(node[key])) {
++        node[key] = node[key].filter(param =>
++          !attribution.has(String(param.name).toLowerCase()) &&
++          !/partnerCode|firefox|mozilla/i.test(JSON.stringify(param))
++        );
++        node[key].forEach(clean);
++      } else {
++        clean(node[key]);
++      }
++    }
++  }
++  clean(result);
++  return result;
++}
++
+@@ -98 +133 @@
+-    let remoteSettingsData = await this.#getConfigurationPromise;
++    let remoteSettingsData = (await this.#getConfigurationPromise).map(ternSearchConfiguration);
+@@ -369 +404 @@
+-    this.#configuration = current;
++    this.#configuration = ternSearchConfiguration(current);
+@@ -396 +431 @@
+-    this.#selector.setConfigOverrides(JSON.stringify({ data: current }));
++    this.#selector.setConfigOverrides(JSON.stringify({ data: ternSearchConfiguration(current) }));
+--- a/toolkit/xre/nsAppRunner.cpp
++++ b/toolkit/xre/nsAppRunner.cpp
+@@ -506 +506 @@
+-    MultiByteToWideChar(CP_ACP, 0, gAppData ? gAppData->name : "XULRunner", -1,
++    MultiByteToWideChar(CP_ACP, 0, gAppData ? MOZ_APP_DISPLAYNAME : "XULRunner", -1,
+@@ -2191 +2191 @@
+-      (const char*)gAppData->name);
++      MOZ_APP_DISPLAYNAME);
+@@ -2222 +2222 @@
+-      (const char*)gAppData->name, (const char*)gAppData->name);
++      MOZ_APP_DISPLAYNAME, MOZ_APP_DISPLAYNAME);
+@@ -2226 +2226 @@
+-         (const char*)gAppData->name);
++         MOZ_APP_DISPLAYNAME);
+@@ -2251 +2251 @@
+-  printf("%s ", (const char*)gAppData->name);
++  printf("%s ", MOZ_APP_DISPLAYNAME);
+@@ -2267 +2267 @@
+-  printf("%s ", (const char*)gAppData->name);
++  printf("%s ", MOZ_APP_DISPLAYNAME);
+@@ -2813 +2813 @@
+-    NS_ConvertUTF8toUTF16 appName(gAppData->name);
++    NS_ConvertUTF8toUTF16 appName(MOZ_APP_DISPLAYNAME);
+@@ -2879 +2879 @@
+-    NS_ConvertUTF8toUTF16 appName(gAppData->name);
++    NS_ConvertUTF8toUTF16 appName(MOZ_APP_DISPLAYNAME);
+@@ -2946 +2946 @@
+-    NS_ConvertUTF8toUTF16 appName(gAppData->name);
++    NS_ConvertUTF8toUTF16 appName(MOZ_APP_DISPLAYNAME);
+@@ -5287 +5287 @@
+-  g_set_application_name(mAppData->name);
++  g_set_application_name(MOZ_APP_DISPLAYNAME);

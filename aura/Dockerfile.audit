@@ -1,0 +1,5 @@
+FROM archlinux:base-devel
+RUN pacman -Syu --noconfirm --needed python python-pip python-setuptools python-virtualenv git mercurial clang lld llvm rust nodejs nasm yasm zip unzip gtk3 libxt dbus-glib nss libpulse libnotify alsa-lib pipewire-jack libva libvpx ffmpeg cbindgen wasi-compiler-rt wasi-libc wasi-libc++ wasi-libc++abi librsvg time cmake ninja pkgconf && pacman -Q > /build-packages.txt
+RUN useradd -m -u 1000 builder
+USER builder
+WORKDIR /work

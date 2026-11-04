@@ -1,0 +1,24 @@
+pkgname=auratern
+pkgver=153.6.0
+pkgrel=1
+pkgdesc='Tern browser built from Firefox ESR'
+arch=('x86_64')
+url='https://github.com/celray/AuraLinux'
+license=('MPL-2.0')
+depends=('gtk3' 'dbus-glib' 'nss' 'libxt' 'libx11' 'libxcb' 'libxcomposite' 'libxdamage' 'libxfixes' 'libxrandr' 'libxkbcommon' 'libdrm' 'mesa' 'pango' 'cairo' 'fontconfig' 'libpulse' 'alsa-lib' 'ffmpeg' 'glibc' 'gcc-libs' 'zlib' 'xdg-utils' 'hicolor-icon-theme')
+optdepends=('haul: optional download hand-off' 'haul-gui: Haul window and tray')
+options=('!strip' '!debug')
+source=('auratern-153.6.0.en-US.linux-x86_64.tar.xz' 'policies.json' 'auratern.desktop' 'auratern-launcher' 'haul-0.1.0.xpi' 'LICENSE')
+sha256sums=('614f33bcfa3d955ccd40585f2d7cce2e1fa4054f2387703023e5dd819e437839' '06c28a7c0c81f28ad93123313a4d3a89e5a4e4bfc90b261c60b6bdde398d503e' 'b75d262678ba0fde2964fd32760f4291c3b30a705420542fd4c897cb9f9556dd' 'c918332ee430a065af4d36bb5370e43f55dc24eec763da8b22f7a5dce3e7d019' '594cf960f08c3c1b1c9f88f3ed18b902f6fade7b6031a103156af6d0027d60ef' 'a799adf18bfb1911f16086dc0e2a6d1cd0e31272f47e7ee6841b465b74d249de')
+package() {
+    install -dm755 "$pkgdir/usr/lib/auratern"
+    cp -a "$srcdir/auratern/." "$pkgdir/usr/lib/auratern/"
+    install -Dm755 "$srcdir/auratern-launcher" "$pkgdir/usr/bin/auratern"
+    install -Dm644 "$srcdir/auratern.desktop" "$pkgdir/usr/share/applications/auratern.desktop"
+    install -Dm644 "$srcdir/policies.json" "$pkgdir/usr/lib/auratern/distribution/policies.json"
+    install -Dm644 "$srcdir/haul-0.1.0.xpi" "$pkgdir/usr/lib/auratern/distribution/extensions/haul@auralinux.org.xpi"
+    for size in 16 32 48 64 128; do
+        install -Dm644 "$srcdir/auratern/browser/chrome/icons/default/default${size}.png" "$pkgdir/usr/share/icons/hicolor/${size}x${size}/apps/auratern.png"
+    done
+    install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/auratern/LICENSE"
+}

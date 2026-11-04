@@ -1,0 +1,64 @@
+{
+  "manifest_version": 2,
+  "name": "Tern Dark",
+  "version": "1.0.0",
+  "description": "Aura colours for Tern.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "auratern-theme-dark@auralinux.org",
+      "strict_min_version": "128.0"
+    }
+  },
+  "icons": {
+    "32": "images/icon-32.png",
+    "256": "images/icon-256.png"
+  },
+  "theme": {
+    "images": {
+      "theme_frame": "images/frame-dark.svg"
+    },
+    "colors": {
+      "frame": "#171e29",
+      "frame_inactive": "#1d2430",
+      "tab_background_text": "#b6c5d8",
+      "tab_selected": "#263140",
+      "tab_text": "#e6ebf3",
+      "tab_line": "#4a91f0",
+      "tab_loading": "#4a91f0",
+      "toolbar": "#202936",
+      "toolbar_text": "#e6ebf3",
+      "toolbar_top_separator": "#202936",
+      "toolbar_bottom_separator": "#333f50",
+      "toolbar_vertical_separator": "#46566b",
+      "toolbar_field": "#171e29",
+      "toolbar_field_text": "#e6ebf3",
+      "toolbar_field_border": "#46566b",
+      "toolbar_field_focus": "#263140",
+      "toolbar_field_text_focus": "#e6ebf3",
+      "toolbar_field_border_focus": "#4a91f0",
+      "toolbar_field_highlight": "#2468d8",
+      "toolbar_field_highlight_text": "#ffffff",
+      "icons": "#b6c5d8",
+      "icons_attention": "#65d5cc",
+      "button_background_hover": "#33445b",
+      "button_background_active": "#405a7c",
+      "popup": "#202936",
+      "popup_text": "#e6ebf3",
+      "popup_border": "#46566b",
+      "popup_highlight": "#2468d8",
+      "popup_highlight_text": "#ffffff",
+      "sidebar": "#1c2431",
+      "sidebar_text": "#e6ebf3",
+      "sidebar_border": "#333f50",
+      "sidebar_highlight": "#2468d8",
+      "sidebar_highlight_text": "#ffffff",
+      "ntp_background": "#171e29",
+      "ntp_text": "#e6ebf3",
+      "ntp_card_background": "#202936"
+    },
+    "properties": {
+      "color_scheme": "dark",
+      "content_color_scheme": "dark"
+    }
+  }
+}

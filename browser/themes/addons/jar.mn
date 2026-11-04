@@ -1,0 +1,39 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+browser.jar:
+%  resource builtin-themes %content/builtin-themes/
+
+  content/builtin-themes/alpenglow                 (alpenglow/*.svg)
+  content/builtin-themes/alpenglow/manifest.json   (alpenglow/manifest.json)
+
+  content/builtin-themes/dark/preview.svg          (dark/preview.svg)
+  content/builtin-themes/dark/icon.svg             (dark/icon.svg)
+  content/builtin-themes/dark/manifest.json        (dark/manifest.json)
+
+  content/builtin-themes/light/preview.svg         (light/preview.svg)
+  content/builtin-themes/light/icon.svg            (light/icon.svg)
+  content/builtin-themes/light/manifest.json       (light/manifest.json)
+
+  content/builtin-themes/aiwindow/manifest.json       (aiwindow/manifest.json)
+  content/builtin-themes/aiwindow/aiwindow-theme.css  (aiwindow/aiwindow-theme.css)
+
+  content/builtin-themes/privatewindow/manifest.json            (privatewindow/manifest.json)
+
+  content/builtin-themes/tern-auto/images/frame-dark.svg (../../branding/auratern/themes/tern-auto/images/frame-dark.svg)
+  content/builtin-themes/tern-auto/images/frame-light.svg (../../branding/auratern/themes/tern-auto/images/frame-light.svg)
+  content/builtin-themes/tern-auto/images/icon-256.png (../../branding/auratern/themes/tern-auto/images/icon-256.png)
+  content/builtin-themes/tern-auto/images/icon-32.png (../../branding/auratern/themes/tern-auto/images/icon-32.png)
+  content/builtin-themes/tern-auto/manifest.json (../../branding/auratern/themes/tern-auto/manifest.json)
+  content/builtin-themes/tern-auto/preview.svg (../../branding/auratern/themes/tern-auto/preview.svg)
+  content/builtin-themes/tern-light/images/frame-light.svg (../../branding/auratern/themes/tern-light/images/frame-light.svg)
+  content/builtin-themes/tern-light/images/icon-256.png (../../branding/auratern/themes/tern-light/images/icon-256.png)
+  content/builtin-themes/tern-light/images/icon-32.png (../../branding/auratern/themes/tern-light/images/icon-32.png)
+  content/builtin-themes/tern-light/manifest.json (../../branding/auratern/themes/tern-light/manifest.json)
+  content/builtin-themes/tern-light/preview.svg (../../branding/auratern/themes/tern-light/preview.svg)
+  content/builtin-themes/tern-dark/images/frame-dark.svg (../../branding/auratern/themes/tern-dark/images/frame-dark.svg)
+  content/builtin-themes/tern-dark/images/icon-256.png (../../branding/auratern/themes/tern-dark/images/icon-256.png)
+  content/builtin-themes/tern-dark/images/icon-32.png (../../branding/auratern/themes/tern-dark/images/icon-32.png)
+  content/builtin-themes/tern-dark/manifest.json (../../branding/auratern/themes/tern-dark/manifest.json)
+  content/builtin-themes/tern-dark/preview.svg (../../branding/auratern/themes/tern-dark/preview.svg)

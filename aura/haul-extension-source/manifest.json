@@ -1,0 +1,39 @@
+{
+  "manifest_version": 2,
+  "name": "Haul",
+  "version": "0.1.0",
+  "description": "Hands matching downloads to the Haul download manager.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "haul@auralinux.org",
+      "strict_min_version": "115.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  },
+  "permissions": [
+    "<all_urls>",
+    "contextMenus",
+    "cookies",
+    "downloads",
+    "nativeMessaging",
+    "storage",
+    "webRequest"
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": true
+  },
+  "browser_action": {
+    "default_title": "Haul: capturing downloads",
+    "default_icon": "icon.svg"
+  },
+  "icons": {
+    "96": "icon.svg"
+  }
+}
